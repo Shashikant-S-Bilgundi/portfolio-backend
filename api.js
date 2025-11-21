@@ -9,43 +9,57 @@ const contactRoutes = require("./contactRoutes");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// 🔗 MongoDB connection
-const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/portfolio_db";
+// 🔗 MongoDB connection (optional in Vercel)
+const MONGODB_URI = process.env.MONGODB_URI;
 
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => {
-    console.log("✅ Connected to MongoDB");
+if (MONGODB_URI) {
+  mongoose
+    .connect(MONGODB_URI)
+    .then(() => {
+      console.log("✅ Connected to MongoDB");
+    })
+    .catch((err) => {
+      console.error("❌ MongoDB connection error:", err);
+    });
+} else {
+  console.log("ℹ️ No MONGODB_URI set – skipping Mongo connection");
+}
+
+// ✅ Simple CORS allowing your frontend + localhost
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "https://portfolio-ruddy-two-62.vercel.app",
+    ],
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
   })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
-  });
+);
 
-/**
- * ✅ CORS
- * For a personal portfolio API, it's fine to allow all origins.
- * This avoids CORS errors from your Vercel frontends and previews.
- * If you want to restrict later, we can swap this to a whitelist.
- */
-const corsOptions = {
-  origin: "*", // allow all origins (you can tighten this later)
-  methods: ["GET", "POST", "OPTIONS"],
-};
+// Preflight
+app.options("*", cors());
 
-app.use(cors(corsOptions));
-// Explicitly handle preflight
-app.options("*", cors(corsOptions));
-
-// JSON body (for non-file routes)
+// Parse JSON
 app.use(express.json());
 
-// Static files
+// (Uploads static only used locally now; memory storage on Vercel)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api", contactRoutes);
 
+// Health check
+app.get("/health", (req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
+});
+
+// Favicon
+app.get("/favicon.ico", (req, res) => {
+  res.status(204).end();
+});
+
+// Root
 app.get("/", (req, res) => {
   res.send("Portfolio API is running");
 });

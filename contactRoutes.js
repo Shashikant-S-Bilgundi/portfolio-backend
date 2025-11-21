@@ -1,21 +1,11 @@
 // server/contactRoutes.js
 const express = require("express");
 const multer = require("multer");
-const path = require("path");
-const Contact = require("./models/Contact"); // ⬅️ add this
 
 const router = express.Router();
 
-// Configure multer for file uploads (stored in /uploads)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "uploads"));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + "-" + file.originalname);
-  },
-});
+// ✅ Use memory storage so we don't write to disk (Vercel-safe)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -27,7 +17,6 @@ const upload = multer({
 // POST /api/contact
 router.post("/contact", upload.single("file"), async (req, res) => {
   try {
-    // Text fields from the form
     const {
       name,
       email,
@@ -41,10 +30,9 @@ router.post("/contact", upload.single("file"), async (req, res) => {
       howHeard,
     } = req.body;
 
-    // File (if uploaded)
     const file = req.file || null;
 
-    // Basic validation (same as front-end)
+    // Basic validation
     if (!name || !name.trim()) {
       return res.status(400).json({ error: "Name is required" });
     }
@@ -58,8 +46,9 @@ router.post("/contact", upload.single("file"), async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    // 💾 Save to MongoDB
-    const contactDoc = await Contact.create({
+    // For now just log (in Vercel logs)
+    console.log("New contact form submission:");
+    console.log({
       name,
       email,
       phone,
@@ -73,18 +62,18 @@ router.post("/contact", upload.single("file"), async (req, res) => {
       file: file
         ? {
             originalName: file.originalname,
-            path: file.path,
+            mimetype: file.mimetype,
             size: file.size,
           }
         : null,
     });
 
-    console.log("New contact form saved:", contactDoc._id);
+    // 👉 If you want to store in Mongo, you can do it here:
+    // await Contact.create({...});
 
     return res.status(200).json({
       success: true,
       message: "Contact form submitted successfully",
-      id: contactDoc._id,
     });
   } catch (err) {
     console.error("Error handling contact form:", err);
