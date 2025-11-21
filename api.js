@@ -34,8 +34,8 @@ app.use(
   })
 );
 
-// (optional) handle preflight
-app.options("*", cors({ origin: allowedOrigins }));
+// ❌ DELETE this (it is causing the crash):
+// app.options("*", cors({ origin: allowedOrigins }));
 
 // ----- Middleware & Routes -----
 app.use(express.json());
