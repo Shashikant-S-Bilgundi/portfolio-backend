@@ -25,7 +25,7 @@ if (MONGODB_URI) {
   console.log("ℹ️ No MONGODB_URI set – skipping Mongo connection");
 }
 
-// ✅ Simple CORS allowing your frontend + localhost
+// ✅ CORS – allow local + deployed frontend
 app.use(
   cors({
     origin: [
@@ -40,13 +40,13 @@ app.use(
 // Preflight
 app.options("*", cors());
 
-// Parse JSON
+// Parse JSON bodies
 app.use(express.json());
 
-// (Uploads static only used locally now; memory storage on Vercel)
+// (Uploads static only used locally; safe to keep or remove)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Routes
+// Use contact routes under /api
 app.use("/api", contactRoutes);
 
 // Health check
@@ -54,7 +54,7 @@ app.get("/health", (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
 });
 
-// Favicon
+// Favicon (avoid random 500s on /favicon.ico)
 app.get("/favicon.ico", (req, res) => {
   res.status(204).end();
 });
@@ -64,6 +64,7 @@ app.get("/", (req, res) => {
   res.send("Portfolio API is running");
 });
 
+// Start server (local dev)
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });

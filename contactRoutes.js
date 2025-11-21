@@ -1,21 +1,9 @@
 // server/contactRoutes.js
 const express = require("express");
-const multer = require("multer");
-
 const router = express.Router();
 
-// ✅ Use memory storage so we don't write to disk (Vercel-safe)
-const storage = multer.memoryStorage();
-
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MB
-  },
-});
-
-// POST /api/contact
-router.post("/contact", upload.single("file"), async (req, res) => {
+// POST /api/contact  (JSON only)
+router.post("/contact", async (req, res) => {
   try {
     const {
       name,
@@ -29,8 +17,6 @@ router.post("/contact", upload.single("file"), async (req, res) => {
       contactMethod,
       howHeard,
     } = req.body;
-
-    const file = req.file || null;
 
     // Basic validation
     if (!name || !name.trim()) {
@@ -46,8 +32,8 @@ router.post("/contact", upload.single("file"), async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    // For now just log (in Vercel logs)
-    console.log("New contact form submission:");
+    // Log to server (this will show up in Vercel logs)
+    console.log("📩 New contact form submission:");
     console.log({
       name,
       email,
@@ -59,24 +45,17 @@ router.post("/contact", upload.single("file"), async (req, res) => {
       message,
       contactMethod,
       howHeard,
-      file: file
-        ? {
-            originalName: file.originalname,
-            mimetype: file.mimetype,
-            size: file.size,
-          }
-        : null,
     });
 
-    // 👉 If you want to store in Mongo, you can do it here:
-    // await Contact.create({...});
+    // If you want to save to MongoDB:
+    // await Contact.create({ ... });
 
     return res.status(200).json({
       success: true,
       message: "Contact form submitted successfully",
     });
   } catch (err) {
-    console.error("Error handling contact form:", err);
+    console.error("❌ Error handling contact form:", err);
     return res.status(500).json({
       success: false,
       error: "Something went wrong while submitting the form",
