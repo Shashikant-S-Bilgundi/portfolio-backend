@@ -17,9 +17,9 @@ const isVercel = !!process.env.VERCEL; // true on Vercel
 let MONGODB_URI = process.env.MONGODB_URI || "";
 
 // For local development, fall back to local Mongo if not set
-if (!MONGODB_URI && !isVercel) {
-  MONGODB_URI = "mongodb://127.0.0.1:27017/portfolio_db";
-}
+// if (!MONGODB_URI && !isVercel) {
+//   MONGODB_URI = "mongodb://127.0.0.1:27017/portfolio_db";
+// }
 
 if (MONGODB_URI) {
   mongoose
