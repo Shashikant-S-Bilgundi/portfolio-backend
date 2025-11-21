@@ -1,11 +1,13 @@
+// contactRoutes.js
 const express = require("express");
-const mongoose = require("mongoose");
 const Contact = require("./Contact");
 
 const router = express.Router();
 
 router.post("/contact", async (req, res) => {
   try {
+    console.log("📩 Incoming /api/contact body:", req.body);
+
     const {
       name,
       email,
@@ -19,6 +21,7 @@ router.post("/contact", async (req, res) => {
       howHeard,
     } = req.body || {};
 
+    // basic validation
     if (!name || !email || !subject || !message) {
       return res.status(400).json({
         success: false,
@@ -26,32 +29,8 @@ router.post("/contact", async (req, res) => {
       });
     }
 
-    const isMongoConnected = mongoose.connection.readyState === 1;
-
-    if (!isMongoConnected) {
-      console.log("⚠️ MongoDB not connected – logging contact only:");
-      console.log({
-        name,
-        email,
-        phone,
-        service,
-        budget,
-        timeline,
-        subject,
-        message,
-        contactMethod,
-        howHeard,
-      });
-
-      return res.json({
-        success: true,
-        saved: false,
-        message:
-          "Contact received (not stored in DB – MongoDB is not configured on this server).",
-      });
-    }
-
-    const newContact = new Contact({
+    // ✅ Always try to save – let Mongoose throw if not connected
+    const saved = await Contact.create({
       name,
       email,
       phone,
@@ -64,9 +43,9 @@ router.post("/contact", async (req, res) => {
       howHeard,
     });
 
-    const saved = await newContact.save();
+    console.log("✅ Contact saved with id:", saved._id);
 
-    res.json({
+    return res.json({
       success: true,
       saved: true,
       contactId: saved._id,
@@ -74,9 +53,9 @@ router.post("/contact", async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error in POST /api/contact:", err);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: "Internal server error",
+      error: err.message || "Internal server error",
     });
   }
 });
