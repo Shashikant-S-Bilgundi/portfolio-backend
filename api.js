@@ -22,28 +22,20 @@ mongoose
     console.error("❌ MongoDB connection error:", err);
   });
 
-// ✅ CORS – allow both local & deployed frontend
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://portfolio-ruddy-two-62.vercel.app",
-];
+/**
+ * ✅ CORS
+ * For a personal portfolio API, it's fine to allow all origins.
+ * This avoids CORS errors from your Vercel frontends and previews.
+ * If you want to restrict later, we can swap this to a whitelist.
+ */
+const corsOptions = {
+  origin: "*", // allow all origins (you can tighten this later)
+  methods: ["GET", "POST", "OPTIONS"],
+};
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (e.g. Postman)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      console.log("❌ CORS blocked origin:", origin);
-      return callback(new Error("Not allowed by CORS"));
-    },
-  })
-);
-
-// Optional: handle preflight for all routes
-app.options("*", cors());
+app.use(cors(corsOptions));
+// Explicitly handle preflight
+app.options("*", cors(corsOptions));
 
 // JSON body (for non-file routes)
 app.use(express.json());
