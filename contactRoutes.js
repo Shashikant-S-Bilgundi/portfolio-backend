@@ -1,8 +1,9 @@
-// server/contactRoutes.js
 const express = require("express");
+const mongoose = require("mongoose");
+const Contact = require("./Contact");
+
 const router = express.Router();
 
-// POST /api/contact  (JSON only)
 router.post("/contact", async (req, res) => {
   try {
     const {
@@ -16,25 +17,41 @@ router.post("/contact", async (req, res) => {
       message,
       contactMethod,
       howHeard,
-    } = req.body;
+    } = req.body || {};
 
-    // Basic validation
-    if (!name || !name.trim()) {
-      return res.status(400).json({ error: "Name is required" });
-    }
-    if (!email || !email.trim()) {
-      return res.status(400).json({ error: "Email is required" });
-    }
-    if (!subject || !subject.trim()) {
-      return res.status(400).json({ error: "Subject is required" });
-    }
-    if (!message || !message.trim()) {
-      return res.status(400).json({ error: "Message is required" });
+    if (!name || !email || !subject || !message) {
+      return res.status(400).json({
+        success: false,
+        error: "Name, email, subject, and message are required.",
+      });
     }
 
-    // Log to server (this will show up in Vercel logs)
-    console.log("📩 New contact form submission:");
-    console.log({
+    const isMongoConnected = mongoose.connection.readyState === 1;
+
+    if (!isMongoConnected) {
+      console.log("⚠️ MongoDB not connected – logging contact only:");
+      console.log({
+        name,
+        email,
+        phone,
+        service,
+        budget,
+        timeline,
+        subject,
+        message,
+        contactMethod,
+        howHeard,
+      });
+
+      return res.json({
+        success: true,
+        saved: false,
+        message:
+          "Contact received (not stored in DB – MongoDB is not configured on this server).",
+      });
+    }
+
+    const newContact = new Contact({
       name,
       email,
       phone,
@@ -47,18 +64,19 @@ router.post("/contact", async (req, res) => {
       howHeard,
     });
 
-    // If you want to save to MongoDB:
-    // await Contact.create({ ... });
+    const saved = await newContact.save();
 
-    return res.status(200).json({
+    res.json({
       success: true,
-      message: "Contact form submitted successfully",
+      saved: true,
+      contactId: saved._id,
+      message: "Contact submitted successfully.",
     });
   } catch (err) {
-    console.error("❌ Error handling contact form:", err);
-    return res.status(500).json({
+    console.error("❌ Error in POST /api/contact:", err);
+    res.status(500).json({
       success: false,
-      error: "Something went wrong while submitting the form",
+      error: "Internal server error",
     });
   }
 });
